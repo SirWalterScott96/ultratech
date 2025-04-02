@@ -1,0 +1,122 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useState, useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+const formSchema = z.object({
+  fullName: z.string().min(1, { message: "Вкажіть ім'я" }),
+  email: z
+    .string()
+    .min(1, { message: "Вкажіть емейл" })
+    .email({ message: "Введіть коректний емейл" }),
+  body: z.string().min(1, { message: "Вкажіть ваш коментар" }),
+});
+
+const ProductReviewForm = () => {
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [opacity, setOpacity] = useState(0);
+
+  // Handle animation when isSubmitted changes
+  useEffect(() => {
+    if (isSubmitted) {
+      // Start animation by changing opacity
+      setTimeout(() => setOpacity(1), 10);
+    } else {
+      setOpacity(0);
+    }
+  }, [isSubmitted]);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      body: "",
+    },
+  });
+
+  function onSubmit(value: z.infer<typeof formSchema>) {
+    console.log(value);
+    setIsSubmitted(true);
+    // Optional: you might want to reset the form after submission
+    // form.reset();
+  }
+
+  return (
+    <div className="border p-4 mt-8 shadow-md rounded-xl space-y-3">
+      <div className="font-bold">Новий відгук або коментар</div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 ">
+          <FormField
+            control={form.control}
+            name="fullName"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input placeholder="Ім'я та прізвище" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input placeholder="Е-пошта" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="body"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Textarea
+                    placeholder="Повідомлення"
+                    {...field}
+                    className="min-h-[100px]"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex items-center gap-4">
+            <Button type="submit" disabled={isSubmitted}>
+              Надіслати
+            </Button>
+            {isSubmitted && (
+              <span
+                className="text-green-600 font-medium transition-opacity duration-500"
+                style={{ opacity, transition: "opacity 0.7s ease-in" }}
+              >
+                Ваш коментар на модерації
+              </span>
+            )}
+          </div>
+        </form>
+      </Form>
+    </div>
+  );
+};
+
+export default ProductReviewForm;

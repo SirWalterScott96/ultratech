@@ -1,6 +1,8 @@
 import { Heart, SearchIcon, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import MyCart from "./my-cart";
+import LanguageSwitcher from "./language-switcher";
 
 const Header = () => {
   return (
@@ -8,26 +10,37 @@ const Header = () => {
       <div className="w-full blue-gradient text-xs hidden md:block">
         <div className="wrapper-sm flex-between">
           <div className="flex gap-3">
-            <div className="">Головна</div>
-            <div className="">Каталог</div>
-            <div className="">Доставка і оплата</div>
-            <div className="">Гарантія і повернення</div>
-            <div className="">Контактна інформація</div>
-            <div className="">Про підприємство</div>
+            <div className="">
+              <Link href="/product/search">Каталог</Link>
+            </div>
+            <div className="">
+              <Link href="/">Головна</Link>
+            </div>
+            <div className="">
+              <Link href="/payment-and-delivery-info">Доставка і оплата</Link>
+            </div>
+            <div className="">
+              <Link href="/warranty-and-return">Гарантія і повернення</Link>
+            </div>
+            <div className="">
+              <Link href="/contact-info">Контактна інформація</Link>
+            </div>
+            <div className="">
+              <Link href="/about">Про підприємство</Link>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-2">
             <div>
               <Heart width="22px" height="22px" />
             </div>
             <div className="flex gap-1">
-              <div className="font-bold">Укр</div>
-              <div>Рус</div>
+              <LanguageSwitcher />
             </div>
           </div>
         </div>
       </div>
       <div className="w-full bg-black">
-        <div className="wrapper flex-between">
+        <div className="wrapper-sm flex-between">
           <div className="flex gap-5 items-center">
             <div>
               <Link href="/">
@@ -41,19 +54,20 @@ const Header = () => {
               </Link>
             </div>
             <div className="flex space-x-3">
-              <Link href="/">Смартфони</Link>
-              <Link href="/">Планшети</Link>
-              <Link href="/">Телевізори</Link>
+              <Link href="/product/search?searchByCategory=phone">
+                Смартфони
+              </Link>
+              <Link href="/product/search?searchByCategory=tablet">
+                Планшети
+              </Link>
+              <Link href="/product/search?searchByCategory=tv">Телевізори</Link>
               <SearchIcon />
             </div>
           </div>
           <div className="flex gap-4">
             <div>098 881-06-32</div>
             <div className="">
-              <Link href="/" className="flex items-center gap-2">
-                <ShoppingCart />
-                Мій кошик
-              </Link>
+              <MyCart />
             </div>
           </div>
         </div>

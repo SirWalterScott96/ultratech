@@ -12,3 +12,54 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Product {
+  slug               String               @id @unique(map: "product_slug_idx")
+  category           Category
+  brand              Brand
+  model              String
+  fullName           String
+  memory             Int?
+  images             String[]
+  price              Int
+  oldPrice           Int?
+  isNew              Boolean?
+  isBestseller       Boolean?
+  inStock            Boolean
+  createdAt          DateTime             @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime             @updatedAt
+  ProductTranslation ProductTranslation[]
+  reviews            Review[]
+}
+
+model ProductTranslation {
+  id              Int    @id @default(autoincrement())
+  productSlug     String
+  locale          String // 'uk' або 'ru'
+  descriptionInfo Json   @db.Json
+
+  product Product @relation(fields: [productSlug], references: [slug], onDelete: Cascade)
+
+  @@unique([productSlug, locale])
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  author      String
+  reviewBody  String
+  rating      Int
+  createdAt   DateTime
+  product     Product? @relation(fields: [productSlug], references: [slug], onDelete: Cascade)
+  productSlug String?
+}
+
+enum Category {
+  tablet
+  phone
+  tv
+}
+
+enum Brand {
+  Samsung
+  Huawei
+}

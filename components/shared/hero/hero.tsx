@@ -4,9 +4,9 @@ import Link from "next/link";
 const HeroSection = () => {
   return (
     <div>
-      <Link href="/">
+      <Link href="/product/search">
         <Image
-          src="/images/hero.png"
+          src="/images/hero.webp"
           alt="hero"
           width={1920}
           height={576}
