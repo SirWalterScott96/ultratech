@@ -1,29 +1,29 @@
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
+
 const AboutPage = () => {
+  const t = useTranslations("AboutPage");
   return (
     <div className="wrapper flex-1 space-y-4 my-5">
       <div className="text-xl">
-        Інтернет-магазин{" "}
-        <span className="font-bold">&quot;UltraTech&quot;</span> успішно працює
-        з 2015 року, пропонуючи широкий вибір найпопулярнішої техніки. За цей
-        час ми зарекомендували себе як надійний і стабільний магазин, здобувши
-        довіру покупців та міцну репутацію.
+        {parse(t("about1"))}
+        <span className="font-bold">{parse(t("about2"))}</span>
+        {parse(t("about3"))}
       </div>
       <div>
-        <div className="h3-bold">Що нас вирізняє?</div>
+        <div className="h3-bold">{parse(t("about4"))}</div>
         <div className="space-y-1">
-          <div>✅ Вигідні ціни &mdash; завжди конкурентні пропозиції.</div>
-          <div>✅ Зручний процес замовлення &mdash; швидко та легко.</div>
-          <div>✅ Якісне обслуговування &mdash; професійний підхід.</div>
-          <div>✅ Спеціальні акції та знижки &mdash; ще більше вигоди.</div>
-          <div>
-            ✅ Персональний сервіс &mdash; індивідуальний підхід до кожного
-            клієнта.
-          </div>
+          <div>{parse(t("about5"))}</div>
+          <div>{parse(t("about6"))}</div>
+          <div>{parse(t("about7"))}</div>
+          <div>{parse(t("about8"))}</div>
+          <div>{parse(t("about9"))}</div>
         </div>
       </div>
       <div>
-        Обирайте <span className="font-bold">&quot;UltraTech&quot;</span>{" "}
-        &mdash; тут технології стають доступнішими! 🚀
+        {parse(t("about10"))}
+        <span className="font-bold">{parse(t("about11"))}</span>
+        {parse(t("about12"))}
       </div>
     </div>
   );

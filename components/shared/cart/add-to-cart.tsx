@@ -1,9 +1,11 @@
 "use client";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Product } from "@prisma/client";
+import { Product } from "@/types";
 import { addItemToCart } from "@/lib/actions/cart.action";
 import CartModal from "./cart-modal";
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
 
 const AddToCart = ({
   product,
@@ -14,6 +16,7 @@ const AddToCart = ({
   quantity: number;
   className: string;
 }) => {
+  const t = useTranslations("LinksAndGeneral");
   const [open, setOpen] = useState(false);
   const addItem = useCallback(async () => {
     await addItemToCart(product, quantity);
@@ -23,7 +26,7 @@ const AddToCart = ({
   return (
     <>
       <Button onClick={addItem} className={className}>
-        Купити
+        {parse(t("buy"))}
       </Button>
       <CartModal open={open} setOpen={setOpen} />
     </>

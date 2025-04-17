@@ -1,6 +1,6 @@
 "use server";
 import { cookies } from "next/headers";
-import { Product } from "@prisma/client";
+import { Product } from "@/types";
 import { prisma } from "@/db/prisma";
 
 async function getAllItems() {
@@ -64,49 +64,46 @@ export async function updateCartItemQuantity(
   const sessionCartCookie = (await cookieStore).get("sessionCart")?.value;
   const sessionCart = sessionCartCookie ? JSON.parse(sessionCartCookie) : [];
 
-  // Знаходимо та оновлюємо елемент у кошику
   const updatedCart = sessionCart.map((item) =>
     item.product_slug === productSlug
       ? { ...item, quantity: newQuantity }
       : item
   );
 
-  // Зберігаємо оновлений кошик у куках
   (await cookieStore).set("sessionCart", JSON.stringify(updatedCart), {
     httpOnly: true,
     sameSite: "strict",
-    maxAge: 60 * 60 * 24 * 7, // 7 днів
+    maxAge: 60 * 60 * 24 * 7, // 7days
   });
 
   return updatedCart;
 }
 
-// Новий метод для видалення товару з кошику
 export async function removeItemFromCart(productSlug: string) {
   const cookieStore = cookies();
   const sessionCartCookie = (await cookieStore).get("sessionCart")?.value;
   const sessionCart = sessionCartCookie ? JSON.parse(sessionCartCookie) : [];
 
-  // Видаляємо елемент з кошику
   const updatedCart = sessionCart.filter(
     (item) => item.product_slug !== productSlug
   );
 
-  // Зберігаємо оновлений кошик у куках
   (await cookieStore).set("sessionCart", JSON.stringify(updatedCart), {
     httpOnly: true,
     sameSite: "strict",
-    maxAge: 60 * 60 * 24 * 7, // 7 днів
+    maxAge: 60 * 60 * 24 * 7, // 7 days
   });
 
   return updatedCart;
 }
 
 export async function clearCart() {
-  const cookieStore = cookies();
+  "use server";
+  const cookieStore = await cookies();
 
-  // Видаляємо cookie "sessionCart"
-  (await cookieStore).delete("sessionCart");
-
-  return { message: "Кошик був очищений" };
+  cookieStore.set("sessionCart", "", {
+    expires: new Date(0), // Set to epoch time to effectively delete
+    path: "/",
+  });
+  return { success: true };
 }

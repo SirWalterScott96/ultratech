@@ -1,26 +1,37 @@
+import { useTranslations } from "next-intl";
+import Link from "next/link";
+
 const ContactInfo = () => {
+  const t = useTranslations("ContactInfo");
+
   return (
     <div className="wrapper flex-1 space-y-4 my-5">
-      <div className="h3-bold">Контактна інформація</div>
+      <div className="h3-bold">{t("title")}</div>
       <div>
-        <div className="uppercase font-bold">адреса</div>
+        <div className="uppercase font-bold">{t("subTitle-1")}</div>
         <div>
-          Україна, Патріотична вулиця, 16, Одеса, Одеська область, 65000
-          Показати на мапі (посилання на точку)
+          {t("info-1")}{" "}
+          <Link
+            target="_blank"
+            href="https://maps.app.goo.gl/4zhdJgbUnnxn6mcy5"
+            className="text-blue-500"
+          >
+            {t("info-1-1")}
+          </Link>
         </div>
       </div>
       <div>
-        <div className="uppercase font-bold">КЕРІВНИК</div>
-        <div>Престецький Роман</div>
+        <div className="uppercase font-bold">{t("subTitle-2")}</div>
+        <div>{t("info-2")}</div>
       </div>
       <div>
-        <div className="uppercase font-bold">ТЕЛЕФОНИ ПІДПРИЄМСТВА</div>
-        <div>+380 Показати телефон (вкажемо телефон пізніше)</div>
+        <div className="uppercase font-bold">{t("subTitle-3")}</div>
+        <div>{t("info-3")}</div>
       </div>
       <div>
-        <div className="uppercase font-bold">ІНТЕРНЕТ</div>
-        <div>Email: ultratechu0@gmail.com</div>
-        <div>Сайт: UltraTech.com.ua (приклад)</div>
+        <div className="uppercase font-bold">{t("subTitle-4")}</div>
+        <div>{t("email")}</div>
+        <div>{t("site")}</div>
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 "use client";
-import ProductCard from "@/components/shared/product/product-card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Product } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import MobileFilterButton from "@/components/shared/search/product-mobile-filter";
+import ProductFilters from "@/components/shared/search/product-filter";
+import ProductsGrid from "@/components/shared/search/products-grid";
 
 const SearchPage = () => {
   const searchParams = useSearchParams();
@@ -61,36 +61,32 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="wrapper flex gap-6 my-5 h-fit">
-      <div className="w-1/4 p-4 border rounded-md shadow-md h-fit">
-        <h2 className="text-lg font-bold mb-3">Фільтр за брендом</h2>
-        {brands.length > 0 ? (
-          brands.map((brand) => (
-            <div key={brand} className="flex items-center gap-2 mb-2">
-              <Checkbox
-                checked={selectedBrands.includes(brand)}
-                onCheckedChange={() => toggleBrand(brand)}
-              />
-              <span>{brand}</span>
-            </div>
-          ))
-        ) : (
-          <p>Бренди не знайдені</p>
-        )}
-        <Button variant="outline" onClick={resetFilters} className="mt-4">
-          Скинути фільтри
-        </Button>
+    <div className="wrapper my-5">
+      <div className="mb-4">
+        <MobileFilterButton
+          brands={brands}
+          selectedBrands={selectedBrands}
+          toggleBrand={toggleBrand}
+          resetFilters={resetFilters}
+        />
       </div>
-      <div className="w-3/4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {isLoading ? (
-          <p className="text-lg font-semibold">Триває пошук...</p>
-        ) : filteredProducts.length > 0 ? (
-          filteredProducts.map((product) => (
-            <ProductCard key={product.slug} product={product} />
-          ))
-        ) : (
-          <p>Немає товарів, що відповідають фільтрам.</p>
-        )}
+
+      <div className="flex flex-col md:flex-row gap-6">
+        <div className="hidden md:block md:w-1/4">
+          <ProductFilters
+            brands={brands}
+            selectedBrands={selectedBrands}
+            toggleBrand={toggleBrand}
+            resetFilters={resetFilters}
+          />
+        </div>
+
+        <div className="w-full md:w-3/4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ProductsGrid
+            isLoading={isLoading}
+            filteredProducts={filteredProducts}
+          />
+        </div>
       </div>
     </div>
   );

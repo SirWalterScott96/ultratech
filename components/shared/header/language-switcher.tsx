@@ -1,28 +1,51 @@
 "use client";
-import { useTranslation } from "react-i18next";
 
-export default function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+import { useLocale } from "next-intl";
+import { useRouter, usePathname } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-  const changeLanguage = (locale: string) => {
-    i18n.changeLanguage(locale);
+interface LanguageSwitcherProps {
+  isMobile?: boolean;
+}
+
+export default function LanguageSwitcher({
+  isMobile = false,
+}: LanguageSwitcherProps) {
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const switchLanguage = (newLocale: string) => {
+    router.replace(pathname, { locale: newLocale });
   };
 
+  const textColor = isMobile ? "text-black" : "text-white";
+
   return (
-    <div className="language-switcher">
-      <button
-        onClick={() => changeLanguage("uk")}
-        className={i18n.language === "uk" ? "active" : ""}
+    <>
+      <Button
+        className={cn(
+          textColor,
+          "p-0",
+          locale === "uk" ? "font-bold" : "font-normal"
+        )}
+        variant={"link"}
+        onClick={() => switchLanguage("uk")}
       >
-        UA
-      </button>
-      <div> </div>
-      <button
-        onClick={() => changeLanguage("ru")}
-        className={i18n.language === "ru" ? "active" : ""}
+        Укр
+      </Button>
+      <Button
+        className={cn(
+          textColor,
+          "p-0",
+          locale === "ru" ? "font-bold" : "font-normal"
+        )}
+        variant={"link"}
+        onClick={() => switchLanguage("ru")}
       >
-        RU
-      </button>
-    </div>
+        Ру
+      </Button>
+    </>
   );
 }

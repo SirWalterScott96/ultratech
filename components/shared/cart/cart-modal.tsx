@@ -1,12 +1,16 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
 
 import OrderList from "./order-list";
+import Link from "next/link";
 
 const CartModal = ({
   open,
@@ -15,19 +19,21 @@ const CartModal = ({
   open: boolean;
   setOpen: (value: boolean) => void;
 }) => {
+  const t = useTranslations("LinksAndGeneral");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="min-w-2xl">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Кошик 🛒</DialogTitle>
+          <DialogTitle>{parse(t("cartSmall"))} 🛒</DialogTitle>
         </DialogHeader>
+        <DialogDescription></DialogDescription>
         <OrderList />
         <div className="flex justify-end gap-2">
           <Button onClick={() => setOpen(false)} variant="outline">
-            Закрити
+            {parse(t("close"))}
           </Button>
-          <Button asChild>
-            <a href="/order">Оформити замовлення</a>
+          <Button onClick={() => setOpen(false)} asChild>
+            <Link href="/order"> {parse(t("orderModal"))}</Link>
           </Button>
         </div>
       </DialogContent>

@@ -15,6 +15,10 @@
     @apply max-w-7xl lg:mx-auto p-2 md:px-2 w-full;
   }
 
+  .wrapper-header {
+    @apply max-w-7xl lg:mx-auto md:px-2 w-full;
+  }
+
   .flex-start {
     @apply flex justify-start items-center;
   }

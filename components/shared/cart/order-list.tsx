@@ -8,8 +8,11 @@ import {
 } from "@/lib/actions/cart.action";
 import { Product } from "@/types";
 import type { CartItem } from "@/types";
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
 
 const OrderList = ({ className }: { className?: string }) => {
+  const t = useTranslations("LinksAndGeneral");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [removedItems, setRemovedItems] = useState<string[]>([]);
 
@@ -73,7 +76,7 @@ const OrderList = ({ className }: { className?: string }) => {
       </div>
       {/* Total Price */}
       <div className="flex justify-between items-center border-t pt-4">
-        <span className="text-lg font-bold">Загальна сума:</span>
+        <span className="text-lg font-bold">{parse(t("fullPrice"))}:</span>
         <span className="text-xl font-bold text-blue-600">
           {totalPrice.toLocaleString()} грн
         </span>

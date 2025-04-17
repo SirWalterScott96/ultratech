@@ -21,26 +21,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import OrderList from "./order-list";
-import { clearCart, getProductsFromCart } from "@/lib/actions/cart.action";
+import { getProductsFromCart } from "@/lib/actions/cart.action";
 import sendTelegramMessage from "@/lib/actions/notification.action";
 import { PhoneInput } from "./phone-input";
 import { redirect } from "next/navigation";
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
+import { AlertDescription, AlertTitle, Alert } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import Spinner from "../spinner";
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
 );
 
-const formSchema = z.object({
-  fullName: z.string().min(3, { message: "Вкажіть ПІБ повністю" }),
-  phoneNumber: z
-    .string()
-    .regex(phoneRegex, "Вкажіть правильний номер телефону"),
-  city: z.string().min(1, "Потрібно вказати місто"),
-  warehouse: z.string().min(1, "Потрібно вказати відділення"),
-  payment: z.string(),
-});
-
 const MainOrder = () => {
+  const t = useTranslations("Forms");
   const [cities, setCities] = useState<{ name: string; ref: string }[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -52,28 +48,88 @@ const MainOrder = () => {
   const [isWarehouseSelected, setIsWarehouseSelected] = useState(false);
   const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
 
-  const [showBankDetails, setShowBankDetails] = useState(false);
+  const [ShowDifferentPaymentDetails, setShowDifferentPaymentDetails] =
+    useState("");
+  const [isCourierDelivery, setIsCourierDelivery] = useState(false);
+  const [isEmptyCart, setIsEmptyCart] = useState(false);
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const getFormSchema = () => {
+    const baseSchema = {
+      fullName: z
+        .string()
+        .min(3, { message: parse(t("firstAndSecondNameError")) as string }),
+      phoneNumber: z
+        .string()
+        .regex(phoneRegex, parse(t("phoneNumberError")) as string),
+      payment: z.string(),
+    };
+
+    if (isCourierDelivery) {
+      return z.object({
+        ...baseSchema,
+        deliveryAddress: z
+          .string()
+          .min(
+            10,
+            parse(
+              t("deliveryAddressError") || "Вкажіть повну адресу доставки"
+            ) as string
+          ),
+      });
+    }
+
+    return z.object({
+      ...baseSchema,
+      city: z.string().min(1, parse(t("cityError")) as string),
+      warehouse: z.string().min(1, parse(t("warehouseError")) as string),
+    });
+  };
+
+  const form = useForm<z.infer<ReturnType<typeof getFormSchema>>>({
+    resolver: zodResolver(getFormSchema()),
     defaultValues: {
       fullName: "",
       phoneNumber: "",
       city: "",
       warehouse: "",
-      payment: "Оплата при отриманні",
+      deliveryAddress: "",
+      payment: parse(t("paymentAfterReceiving")) as string,
     },
   });
 
   useEffect(() => {
+    form.clearErrors();
+    form.reset(
+      { ...form.getValues() },
+      {
+        keepValues: true,
+        keepDirty: true,
+        keepIsSubmitted: false,
+        keepTouched: false,
+      }
+    );
+  }, [isCourierDelivery]);
+
+  useEffect(() => {
     const paymentMethod = form.watch("payment");
-    setShowBankDetails(paymentMethod === "Безготівковий розрахунок");
+    const isCourier = paymentMethod === parse(t("deliveryCourier"));
+
+    setIsCourierDelivery(isCourier);
+
+    if (paymentMethod === parse(t("cashlessPayment"))) {
+      setShowDifferentPaymentDetails(paymentMethod);
+    } else if (isCourier) {
+      setShowDifferentPaymentDetails(paymentMethod);
+    } else {
+      setShowDifferentPaymentDetails("");
+    }
   }, [form.watch("payment")]);
 
   useEffect(() => {
     const cityValue = form.watch("city");
 
-    if (cityValue.length < 3 || isCitySelected) {
+    if (cityValue?.length < 3 || isCitySelected || isCourierDelivery) {
       setCities([]);
       setShowCityDropdown(false);
       return;
@@ -108,7 +164,7 @@ const MainOrder = () => {
 
     const timeout = setTimeout(fetchCities, 500);
     return () => clearTimeout(timeout);
-  }, [form.watch("city"), isCitySelected]);
+  }, [form.watch("city"), isCitySelected, isCourierDelivery]);
 
   const fetchWarehouses = async (searchQuery = "") => {
     if (!cityRef) return;
@@ -145,48 +201,62 @@ const MainOrder = () => {
   };
 
   useEffect(() => {
-    if (!cityRef) return;
+    if (!cityRef || isCourierDelivery) return;
     fetchWarehouses();
     return () => setWarehouses([]);
-  }, [cityRef]);
+  }, [cityRef, isCourierDelivery]);
 
   useEffect(() => {
     const warehouseValue = form.watch("warehouse");
 
-    if (cityRef && warehouseValue && !isWarehouseSelected) {
+    if (
+      cityRef &&
+      warehouseValue &&
+      !isWarehouseSelected &&
+      !isCourierDelivery
+    ) {
       const timeout = setTimeout(() => {
         fetchWarehouses(warehouseValue);
       }, 500);
 
       return () => clearTimeout(timeout);
     }
-  }, [form.watch("warehouse")]);
+  }, [form.watch("warehouse"), isCourierDelivery]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: any) => {
+    setIsFormSubmitted(true);
     const productsInCart = await getProductsFromCart();
 
-    if (!productsInCart) return;
+    if (productsInCart.length == 0) {
+      setIsEmptyCart(true);
+      return;
+    }
 
     const body = {
       fullName: values.fullName,
       phoneNumber: values.phoneNumber,
-      city: values.city,
-      warehouse: values.warehouse,
       products: productsInCart,
+      ...(isCourierDelivery
+        ? { deliveryAddress: values.deliveryAddress, deliveryType: "courier" }
+        : {
+            city: values.city,
+            warehouse: values.warehouse,
+            deliveryType: "warehouse",
+          }),
     };
-
     const response = await sendTelegramMessage(body, true);
 
     if (response) {
-      await clearCart();
       redirect("/success");
     }
   };
 
   return (
-    <div className="flex gap-4">
-      <div className="w-1/2 p-4 border rounded-lg relative">
-        <h2 className="text-lg font-bold mb-4">Форма замовлення</h2>
+    <div className="flex flex-col md:flex-row gap-4">
+      <div className="w-full md:w-1/2 p-4 border rounded-lg relative">
+        <h2 className="text-lg font-bold mb-4 text-center md:text-start">
+          {parse(t("orderForm"))}
+        </h2>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -194,8 +264,11 @@ const MainOrder = () => {
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ПІБ</FormLabel>
-                  <Input placeholder="Прізвище, ім'я, по батькові" {...field} />
+                  <FormLabel>{parse(t("firstAndSecondName"))}</FormLabel>
+                  <Input
+                    placeholder={parse(t("fullNamePlaceholder")) as string}
+                    {...field}
+                  />
                   <FormMessage />
                 </FormItem>
               )}
@@ -205,126 +278,41 @@ const MainOrder = () => {
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Телефон</FormLabel>
+                  <FormLabel>{parse(t("phoneNumber"))}</FormLabel>
                   <PhoneInput {...field} />
                   <FormMessage />
                 </FormItem>
               )}
             />
             <div>
-              Доставка здійснюється <b>Новою Поштою</b>
+              {parse(t("deliveryCarried"))} <b>{parse(t("deliveryCompany"))}</b>
             </div>
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem className="relative">
-                  <FormLabel>Місто</FormLabel>
-                  <Input
-                    placeholder="Почніть вводити..."
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                      setIsCitySelected(false);
-                      if (e.target.value.length >= 3) {
-                        setShowCityDropdown(true);
-                      }
-                    }}
-                  />
-                  {showCityDropdown && cities.length > 0 && (
-                    <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
-                      {cities.map(({ name, ref }, index) => (
-                        <li
-                          key={index}
-                          className="p-2 hover:bg-gray-200 cursor-pointer"
-                          onClick={() => {
-                            form.setValue("city", name);
-                            setCityRef(ref);
-                            setShowCityDropdown(false);
-                            setIsCitySelected(true);
-                            form.setValue("warehouse", "");
-                          }}
-                        >
-                          {name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {loadingCities && (
-                    <div className="text-sm text-gray-500 mt-1">
-                      Завантаження міст...
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="warehouse"
-              render={({ field }) => (
-                <FormItem className="relative">
-                  <FormLabel>Відділення</FormLabel>
-                  <Input
-                    placeholder={
-                      cityRef
-                        ? "Почніть вводити для пошуку..."
-                        : "Спочатку оберіть місто"
-                    }
-                    {...field}
-                    disabled={!cityRef}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                      if (cityRef) {
-                        setShowWarehouseDropdown(true);
-                      }
-                    }}
-                  />
-                  {showWarehouseDropdown && warehouses.length > 0 && (
-                    <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
-                      {warehouses.map((wh, index) => (
-                        <li
-                          key={index}
-                          className="p-2 hover:bg-gray-200 cursor-pointer"
-                          onClick={() => {
-                            form.setValue("warehouse", wh);
-                            setIsWarehouseSelected(true);
-                            setShowWarehouseDropdown(false);
-                          }}
-                        >
-                          {wh}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {loadingWarehouses && (
-                    <div className="text-sm text-gray-500 mt-1">
-                      Завантаження відділень...
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="payment"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Спосіб оплати</FormLabel>
+                  <FormLabel>{parse(t("paymentOptions"))}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Оберіть спосіб оплати" />
+                      <SelectValue
+                        placeholder={parse(t("paymentOptionsChoice"))}
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Оплата при отриманні">
-                        Оплата при отриманні
+                      <SelectItem
+                        value={parse(t("paymentAfterReceiving")) as string}
+                      >
+                        {parse(t("paymentAfterReceiving"))}
                       </SelectItem>
-                      <SelectItem value="Безготівковий розрахунок">
-                        Безготівковий розрахунок
+                      <SelectItem value={parse(t("cashlessPayment")) as string}>
+                        {parse(t("cashlessPayment"))}
+                      </SelectItem>
+                      <SelectItem value={parse(t("deliveryCourier")) as string}>
+                        {parse(t("deliveryCourier"))}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -333,31 +321,173 @@ const MainOrder = () => {
               )}
             />
 
-            {showBankDetails && (
+            {/* Для кур'єрської доставки показуємо поле адреси */}
+            {isCourierDelivery ? (
+              <FormField
+                control={form.control}
+                name="deliveryAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {parse(t("deliveryAddress") || "Адреса доставки")}
+                    </FormLabel>
+                    <Input
+                      placeholder={
+                        parse(
+                          t("enterFullAddressDelivery") ||
+                            "Введіть повну адресу доставки"
+                        ) as string
+                      }
+                      {...field}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              // Інакше показуємо поля для вибору міста та відділення
+              <>
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem className="relative">
+                      <FormLabel>{parse(t("city"))}</FormLabel>
+                      <Input
+                        placeholder={parse(t("startTyping")) as string}
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          setIsCitySelected(false);
+                          if (e.target.value.length >= 3) {
+                            setShowCityDropdown(true);
+                          }
+                        }}
+                      />
+                      {showCityDropdown && cities.length > 0 && (
+                        <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
+                          {cities.map(({ name, ref }, index) => (
+                            <li
+                              key={index}
+                              className="p-2 hover:bg-gray-200 cursor-pointer"
+                              onClick={() => {
+                                form.setValue("city", name);
+                                setCityRef(ref);
+                                setShowCityDropdown(false);
+                                setIsCitySelected(true);
+                                form.setValue("warehouse", "");
+                              }}
+                            >
+                              {name}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {loadingCities && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {parse(t("cityLoading"))}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="warehouse"
+                  render={({ field }) => (
+                    <FormItem className="relative">
+                      <FormLabel>{parse(t("warehouse"))}</FormLabel>
+                      <Input
+                        placeholder={
+                          cityRef
+                            ? (parse(t("startTyping")) as string)
+                            : (parse(t("startSelectCity")) as string)
+                        }
+                        {...field}
+                        disabled={!cityRef}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          if (cityRef) {
+                            setShowWarehouseDropdown(true);
+                          }
+                        }}
+                      />
+                      {showWarehouseDropdown && warehouses.length > 0 && (
+                        <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
+                          {warehouses.map((wh, index) => (
+                            <li
+                              key={index}
+                              className="p-2 hover:bg-gray-200 cursor-pointer"
+                              onClick={() => {
+                                form.setValue("warehouse", wh);
+                                setIsWarehouseSelected(true);
+                                setShowWarehouseDropdown(false);
+                              }}
+                            >
+                              {wh}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {loadingWarehouses && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          {parse(t("warehouseLoading"))}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            {ShowDifferentPaymentDetails === parse(t("cashlessPayment")) && (
               <div className="p-3 bg-gray-50 rounded-md border">
                 <h3 className="font-medium mb-2 text-sm">
-                  Реквізити для оплати:
+                  {parse(t("paymentOptions"))}:
                 </h3>
                 <div className="text-sm space-y-1">
-                  <p>IBAN: UA213223130000026007233566001</p>
+                  <p>IBAN: UA212223130000016007233566102</p>
                   <p>ЄДРПОУ: 41231456</p>
-                  <p>Банк: АТ КБ "ПриватБанк"</p>
-                  <p>Отримувач: ТОВ "Назва Компанії"</p>
+                  <p>Банк: АТ КБ &quot;ПриватБанк&quot;</p>
+                  <p>Отримувач: ТОВ &quot;Назва Компанії&quot;</p>
                   <p className="text-xs text-gray-500 mt-2">
-                    Після оплати, надішліть, будь ласка, підтвердження платежу
-                    на пошту payments@example.com
+                    {parse(t("paymentAfter"))}
                   </p>
                 </div>
               </div>
             )}
-
-            <Button type="submit" disabled={loadingCities || loadingWarehouses}>
-              Відправити
-            </Button>
+            {isEmptyCart && (
+              <Alert className="w-fit bg-red-100" variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle> {parse(t("Error"))}</AlertTitle>
+                <AlertDescription>
+                  {parse(t("errorEmptyMessage"))}
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="flex flex-col gap-4 md:flex-row items-center">
+              <Button
+                type="submit"
+                className="w-full md:w-fit"
+                disabled={loadingCities || loadingWarehouses || isFormSubmitted}
+              >
+                <div className="flex gap-3 items-center">
+                  {parse(t("send"))}
+                  {isFormSubmitted && <Spinner />}
+                </div>
+              </Button>
+              {isFormSubmitted && (
+                <p className="font-bold text-blue-500">
+                  {parse(t("formValidate"))}
+                </p>
+              )}
+            </div>
           </form>
         </Form>
       </div>
-      <OrderList className="flex flex-col" />
+      <OrderList className="flex flex-col border-2 rounded-md p-3 md:border-0 md:p-0" />
     </div>
   );
 };

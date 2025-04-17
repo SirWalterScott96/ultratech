@@ -13,7 +13,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 }) => {
   return (
     <PatternFormat
-      format="+380 (##) ###-##-##"
+      format="+38# (##) ###-##-##"
       allowEmptyFormatting
       mask="_"
       value={value}

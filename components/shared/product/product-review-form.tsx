@@ -15,19 +15,23 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-const formSchema = z.object({
-  fullName: z.string().min(1, { message: "Вкажіть ім'я" }),
-  email: z
-    .string()
-    .min(1, { message: "Вкажіть емейл" })
-    .email({ message: "Введіть коректний емейл" }),
-  body: z.string().min(1, { message: "Вкажіть ваш коментар" }),
-});
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
 
 const ProductReviewForm = () => {
+  const t = useTranslations("Forms");
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [opacity, setOpacity] = useState(0);
+
+  const formSchema = z.object({
+    fullName: z.string().min(1, { message: t("fullNameError") }),
+    email: z
+      .string()
+      .min(1, { message: t("emailError") })
+      .email({ message: t("isEmailError") }),
+    body: z.string().min(1, { message: t("reviewError") }),
+  });
 
   // Handle animation when isSubmitted changes
   useEffect(() => {
@@ -57,7 +61,7 @@ const ProductReviewForm = () => {
 
   return (
     <div className="border p-4 mt-8 shadow-md rounded-xl space-y-3">
-      <div className="font-bold">Новий відгук або коментар</div>
+      <div className="font-bold">{parse(t("title"))}</div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 ">
           <FormField
@@ -66,7 +70,7 @@ const ProductReviewForm = () => {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Input placeholder="Ім'я та прізвище" {...field} />
+                  <Input placeholder={t("fullName")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -78,7 +82,7 @@ const ProductReviewForm = () => {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Input placeholder="Е-пошта" {...field} />
+                  <Input placeholder={t("email")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,7 +95,7 @@ const ProductReviewForm = () => {
               <FormItem>
                 <FormControl>
                   <Textarea
-                    placeholder="Повідомлення"
+                    placeholder={t("message")}
                     {...field}
                     className="min-h-[100px]"
                   />
@@ -101,15 +105,19 @@ const ProductReviewForm = () => {
             )}
           />
           <div className="flex items-center gap-4">
-            <Button type="submit" disabled={isSubmitted}>
-              Надіслати
+            <Button
+              type="submit"
+              className="w-full md:w-fit"
+              disabled={isSubmitted}
+            >
+              {t("send")}
             </Button>
             {isSubmitted && (
               <span
                 className="text-green-600 font-medium transition-opacity duration-500"
                 style={{ opacity, transition: "opacity 0.7s ease-in" }}
               >
-                Ваш коментар на модерації
+                {t("successReview")}
               </span>
             )}
           </div>

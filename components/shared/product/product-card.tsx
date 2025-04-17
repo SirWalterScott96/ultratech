@@ -1,10 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Product } from "@/types";
 import AddToCart from "../cart/add-to-cart";
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
 
 const ProductCard = ({
   product,
@@ -13,6 +14,7 @@ const ProductCard = ({
   product: Product;
   small?: boolean;
 }) => {
+  const t = useTranslations("LinksAndGeneral");
   return (
     <Card
       className={
@@ -23,20 +25,20 @@ const ProductCard = ({
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {product.isNew && (
             <Badge
-              className={`bg-blue-500 text-white ${
+              className={`bg-blue-500 text-white z-10 ${
                 small ? "text-xs" : "text-sm"
               }`}
             >
-              Новинка
+              {parse(t("new"))}
             </Badge>
           )}
           {product.isBestseller && (
             <Badge
-              className={`bg-green-500 text-white ${
+              className={`bg-green-500 text-white z-10 ${
                 small ? "text-xs" : "text-sm"
               }`}
             >
-              Хіт
+              {parse(t("hit"))}
             </Badge>
           )}
         </div>
@@ -57,7 +59,7 @@ const ProductCard = ({
       <CardContent className="flex flex-col h-full justify-between gap-4">
         <div>
           <div className={`text-balance ${small ? "text-xs" : "text-md"}`}>
-            {product.fullName}
+            <Link href={`/product/${product.slug}`}>{product.fullName}</Link>
           </div>
           <div className={`font-bold flex gap-4 ${small ? "text-sm" : ""}`}>
             <div className="text-blue-500">{product.price} грн</div>
@@ -66,7 +68,7 @@ const ProductCard = ({
             )}
           </div>
           <div className={`text-green-500 ${small ? "text-xs" : "text-sm"}`}>
-            В наявності
+            {parse(t("inStock"))}
           </div>
         </div>
         {!small && (

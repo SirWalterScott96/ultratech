@@ -1,0 +1,8 @@
+node_modules
+.git
+.next
+.github
+README.md
+.env*
+!.env.example
+postgres-data

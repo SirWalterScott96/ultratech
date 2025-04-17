@@ -1,41 +1,50 @@
 import {
   getAllProducts,
-  getProductBySlug,
+  getProductBySlugAndLocale,
 } from "@/lib/actions/products.action";
 import { notFound } from "next/navigation";
 import ProductImages from "@/components/shared/product/product-images";
 import MemorySelector from "@/components/shared/product/memory-selector";
 import ProductDescription from "@/components/shared/product/product-description";
-import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
-import ProductCarousel from "@/components/shared/product/product-carousel";
 import ProductReviews from "@/components/shared/product/product-reviews";
 import ProductReviewForm from "@/components/shared/product/product-review-form";
 import AddToCart from "@/components/shared/cart/add-to-cart";
 import QuickOrder from "@/components/shared/cart/quick-order";
+import SmallProductCarousel from "@/components/shared/product/small-product-carousel";
+import PriceAndStock from "@/components/shared/product/price-stock";
+import ProductFeatures from "@/components/shared/product/product-features";
 
 const ProductPage = async ({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string; locale: string }>;
 }) => {
-  const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const { slug, locale } = await params;
+  const product = await getProductBySlugAndLocale(slug, locale);
   if (!product) notFound();
 
   const allProducts = await getAllProducts();
-
   return (
     <div className="wrapper flex-1 space-y-4 my-5">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4 md:px-8 lg:px-16 py-6">
-        {/* Ліва колонка: зображення + опис */}
-        <div className="sticky top-4 h-fit">
-          <ProductImages images={product.images.slice(1)} />
-          <ProductReviews reviews={product.reviews} />
-          <ProductReviewForm />
+      {/* Mobile view (column layout) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* First column: Images and Info (reordered on mobile) */}
+        <div className="md:sticky md:top-4 md:h-fit space-y-6">
+          {/* Product Images - Responsive sizing */}
+          <div className="">
+            <ProductImages images={product.images.slice(1)} />
+          </div>
+
+          {/* These components will only be shown on desktop view */}
+          <div className="hidden md:block">
+            <ProductFeatures />
+            <ProductReviews reviews={product.reviews} />
+            <ProductReviewForm />
+          </div>
         </div>
 
-        {/* Права колонка: ціна + детальна інформація */}
+        {/* Second column: Product details */}
         <div className="flex flex-col gap-6">
           <h2 className="h3-bold">{product.fullName}</h2>
           <div className="flex align-center">
@@ -48,12 +57,7 @@ const ProductPage = async ({
               <Star color="#108dda" fill="#108dda" size={18} />
             </div>
           </div>
-          <div>
-            <div className="text-xl text-blue-500 font-bold">
-              {product.price} грн
-            </div>
-            <div className="text-sm text-green-500">В наявності</div>
-          </div>
+          <PriceAndStock price={product.price} />
           {product.memory && (
             <div>
               <MemorySelector
@@ -62,21 +66,25 @@ const ProductPage = async ({
               />
             </div>
           )}
-          <div className="space-x-4">
-            <AddToCart className="" product={product} quantity={1} />
-            <QuickOrder product={product} />
-            {/* <Button variant={"outline"}>Замовити швидко</Button> */}
+          <div className="space-y-6 md:space-y-0 md:space-x-4">
+            <AddToCart
+              className="w-full md:w-fit"
+              product={product}
+              quantity={1}
+            />
+            <QuickOrder className="w-full md:w-fit" product={product} />
           </div>
-          <div className="border-b-2 font-bold">Опис</div>
           <ProductDescription descriptionInfo={product.descriptionInfo} />
 
-          <div className="space-y-3">
-            <div className="border-b-2 font-bold ">Дивитись також</div>
-            <div>
-              <ProductCarousel small={true} products={allProducts} />
-            </div>
-          </div>
+          <SmallProductCarousel products={allProducts} />
         </div>
+      </div>
+
+      {/* These components will only be shown on mobile view - below both columns */}
+      <div className="md:hidden px-4 space-y-6">
+        <ProductFeatures />
+        <ProductReviews reviews={product.reviews} />
+        <ProductReviewForm />
       </div>
     </div>
   );

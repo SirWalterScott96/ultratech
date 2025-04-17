@@ -4,7 +4,13 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,21 +23,30 @@ import {
 } from "@/components/ui/form";
 import { PhoneInput } from "./phone-input";
 import sendTelegramMessage from "@/lib/actions/notification.action";
+import { useTranslations } from "next-intl";
+import parse from "html-react-parser";
+import { useRouter } from "next/navigation";
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
 );
 
-const formSchema = z.object({
-  fullName: z.string().min(1, { message: "Вкажіть ПІБ" }),
-  phoneNumber: z
-    .string()
-    .regex(phoneRegex, "Вкажіть правильний номер телефону"),
-});
-
-const QuickOrder = ({ product }: { product: Product }) => {
+const QuickOrder = ({
+  product,
+  className = "",
+}: {
+  product: Product;
+  className: string;
+}) => {
+  const t = useTranslations("Forms");
   const [status, setStatus] = useState<"success" | "error" | null>(null);
   const [opacity, setOpacity] = useState(0);
+  const router = useRouter();
+
+  const formSchema = z.object({
+    fullName: z.string().min(1, { message: t("firstAndSecondNameError") }),
+    phoneNumber: z.string().regex(phoneRegex, t("phoneNumberError")),
+  });
 
   useEffect(() => {
     if (status) {
@@ -52,16 +67,17 @@ const QuickOrder = ({ product }: { product: Product }) => {
   async function onSubmit(value: z.infer<typeof formSchema>) {
     setStatus(null);
     const rawMessage = {
-      fullname: value.fullName,
+      fullName: value.fullName,
       phoneNumber: value.phoneNumber,
       product: product.fullName,
-      price: product.price,
+      price: String(product.price),
     };
 
     const response = await sendTelegramMessage(rawMessage);
 
     if (response) {
       setStatus("success");
+      router.push("/success");
       // form.reset();
     } else {
       setStatus("error");
@@ -71,9 +87,13 @@ const QuickOrder = ({ product }: { product: Product }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Замовити швидко</Button>
+        <Button variant="outline" className={className}>
+          {parse(t("quickBuy"))}
+        </Button>
       </DialogTrigger>
-      <DialogContent className="min-w-2xl">
+      <DialogContent className="w-full md:max-w-2xl">
+        <DialogTitle></DialogTitle>
+        <DialogDescription></DialogDescription>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -81,9 +101,14 @@ const QuickOrder = ({ product }: { product: Product }) => {
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ПІБ</FormLabel>
+                  <FormLabel className="text-xl">
+                    {parse(t("firstAndSecondName"))}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Ім'я та прізвище" {...field} />
+                    <Input
+                      placeholder={parse(t("fullName")) as string}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -94,7 +119,9 @@ const QuickOrder = ({ product }: { product: Product }) => {
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Номер телефону</FormLabel>
+                  <FormLabel className="text-xl">
+                    {parse(t("phoneNumber"))}
+                  </FormLabel>
                   <FormControl>
                     <PhoneInput {...field} />
                   </FormControl>
@@ -104,14 +131,14 @@ const QuickOrder = ({ product }: { product: Product }) => {
             />
             <div className="flex items-center gap-4">
               <Button type="submit" disabled={status === "success"}>
-                Оформити замовлення
+                {parse(t("submitOrder"))}
               </Button>
               {status === "success" && (
                 <span
                   className="text-green-600 font-medium transition-opacity duration-500"
                   style={{ opacity, transition: "opacity 0.7s ease-in" }}
                 >
-                  Ваше замовлення надіслане
+                  {parse(t("successSubmit"))}
                 </span>
               )}
               {status === "error" && (
@@ -119,7 +146,7 @@ const QuickOrder = ({ product }: { product: Product }) => {
                   className="text-red-600 font-medium transition-opacity duration-500"
                   style={{ opacity, transition: "opacity 0.7s ease-in" }}
                 >
-                  Помилка при надсиланні, спробуйте ще раз
+                  {parse(t("errorSubmit"))}
                 </span>
               )}
             </div>

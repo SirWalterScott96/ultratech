@@ -18,7 +18,6 @@ export default function MemorySelector({
   currentMemory,
 }: MemorySelectorProps) {
   const [memoryOptions, setMemoryOptions] = useState<DeviceWithMemory[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMemoryOptions = async () => {
@@ -32,7 +31,6 @@ export default function MemorySelector({
       } catch (error) {
         console.error("Error fetching memory options:", error);
       } finally {
-        setLoading(false);
       }
     };
 

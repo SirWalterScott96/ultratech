@@ -1,0 +1,21 @@
+
+
+
+------------------------------------
+Date: 15.04.2025, 17:24:12
+Action: Lead
+FB Click ID Empty? true
+URL: https://graph.facebook.com/v17.0/21341234123/events?access_token=3432414123412341
+Data: {
+  "event_name": "Lead",
+  "event_time": 1744727052,
+  "action_source": "website",
+  "event_source_url": "https://localhost:3000",
+  "user_data": {
+    "client_ip_address": "::1",
+    "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+    "fbc": null,
+    "fbp": "fb.1.1744727052.6742"
+  }
+}
+Response: {"error":{"message":"Invalid OAuth access token - Cannot parse access token","type":"OAuthException","code":190,"fbtrace_id":"A3L2hRuVaxoIvrE0UKZ_UvK"}}

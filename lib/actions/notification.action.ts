@@ -1,14 +1,13 @@
 "use server";
 
 import { CartItem } from "@/types";
+import { cookies } from "next/headers";
 
 // Telegram Bot Configuration
 const TELEGRAM_BOT_TOKEN =
   process.env.TELEGRAM_BOT_TOKEN ||
   "6608413775:AAF8wsU_g3rquvY8ox4aY6YCylEGk2CoKe0";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "-4064558372";
-const EMAIL_RECIPIENT =
-  process.env.EMAIL_RECIPIENT || "elrctronikone@gmail.com";
 
 type OrderData = {
   fullName: string;
@@ -17,8 +16,16 @@ type OrderData = {
   products?: CartItem[];
   price?: string;
   city?: string;
+  deliveryAddress?: string;
+  deliveryType?: string;
   warehouse?: string;
 };
+
+async function getToken() {
+  const cookieStore = await cookies();
+  const sub1 = cookieStore.get("sub1")?.value;
+  return sub1;
+}
 
 // Utility function to sanitize message
 function sanitizeMessage(message: string): string {
@@ -34,6 +41,7 @@ export default async function sendTelegramMessage(
     ? await createMainMessage(order)
     : await createSmallMessage(order);
   const sanitizedMessage = sanitizeMessage(message);
+
   const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
 
   try {
@@ -59,7 +67,7 @@ export default async function sendTelegramMessage(
 // Main function for creating a small message
 async function createSmallMessage(data: OrderData) {
   const { fullName, phoneNumber, product, price } = data;
-
+  const sub1 = await getToken();
   // Prepare message
   const message = `
   📱 Нове замовлення:
@@ -67,7 +75,7 @@ async function createSmallMessage(data: OrderData) {
   👤 Ім'я: ${fullName || "Не вказано"} 
   📦 Товар: ${product || "Не вказано"} 
   💵 Ціна: ${price || "Не вказано"} грн
-  🌐 Сайт: ${process.env.NEXT_PUBLIC_SITE_URL || "Невідомо"}
+  🌐 sub1: ${sub1 || "Не вказано"}
   `.trim();
 
   return message;
@@ -75,7 +83,15 @@ async function createSmallMessage(data: OrderData) {
 
 // Main function for creating a main message
 async function createMainMessage(data: OrderData) {
-  const { fullName, phoneNumber, products = [], city, warehouse } = data;
+  const {
+    fullName,
+    phoneNumber,
+    products = [],
+    city,
+    warehouse,
+    deliveryAddress,
+    deliveryType,
+  } = data;
 
   const productsList = products
     .map((product) => {
@@ -85,15 +101,26 @@ async function createMainMessage(data: OrderData) {
     })
     .join("\n  ");
 
+  let deliveryInfo = "";
+
+  if (deliveryType === "courier") {
+    deliveryInfo = `
+  🚚 Кур'єрська доставка
+  📍 Адреса: ${deliveryAddress || "Не вказано"}`;
+  } else {
+    deliveryInfo = `
+  🏙️ Місто: ${city || "Не вказано"}
+  🏤 Відділення: ${warehouse || "Не вказано"}`;
+  }
+  const sub1 = await getToken();
   const message = `
   📱 Нове замовлення:
   📞 Телефон: ${phoneNumber}
   👤 Ім'я: ${fullName || "Не вказано"} 
   🛒 Товари:
   ${productsList || "Не вказано"}
-  🏙️ Місто: ${city || "Не вказано"}
-  🏤 Відділення: ${warehouse || "Не вказано"}
-  🌐 Сайт: ${process.env.NEXT_PUBLIC_SITE_URL || "Невідомо"}
+  ${deliveryInfo}
+  🌐 sub1: ${sub1 || "Не вказано"}
   `.trim();
 
   return message;

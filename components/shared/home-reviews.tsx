@@ -14,8 +14,14 @@ const HomeReviews = async () => {
   if (!reviews) return <div>Ще нема відгуків</div>;
 
   return (
-    <Carousel className={"w-full flex items-stretch"}>
-      <CarouselContent className="-ml-1">
+    <Carousel
+      className={"w-full flex"}
+      opts={{
+        align: "start",
+        loop: true,
+      }}
+    >
+      <CarouselContent className="">
         {reviews.map((review: Review) => (
           <CarouselItem
             key={review.id}
@@ -26,8 +32,8 @@ const HomeReviews = async () => {
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
+      <CarouselPrevious className="absolute left-0 -ml-4 lg:-ml-8 z-10 bg-white/80 shadow-md hover:bg-white border border-gray-200" />
+      <CarouselNext className="absolute right-0 -mr-4 lg:-mr-8 z-10 bg-white/80 shadow-md hover:bg-white border border-gray-200" />
     </Carousel>
   );
 };

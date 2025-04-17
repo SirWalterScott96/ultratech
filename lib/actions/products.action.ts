@@ -2,6 +2,8 @@
 import { Category } from "@/types";
 import { convertToPlainObject } from "../utils";
 import { prisma } from "@/db/prisma";
+import { z } from "zod";
+import { DescriptionInfoSchema } from "@/validation/schema";
 
 type SearchType = "isNew" | "isBestseller";
 
@@ -19,8 +21,8 @@ export async function getProductBy({ types }: { types: SearchType }) {
 
 // Get all products
 export async function getAllProducts() {
-  const data = await prisma.product.findMany();
-  return convertToPlainObject(data);
+  const product = await prisma.product.findMany();
+  return convertToPlainObject(product);
 }
 
 // Get products length
@@ -30,15 +32,32 @@ export async function getProductsLength() {
 }
 
 // Get single product by it's slug
-export async function getProductBySlug(slug: string) {
-  return prisma.product.findFirst({
-    where: {
-      slug: slug,
-    },
-    include: {
-      reviews: true,
-    },
-  });
+export async function getProductBySlugAndLocale(slug: string, locale: string) {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: {
+        ProductTranslation: {
+          where: { locale },
+        },
+        reviews: true,
+      },
+    });
+
+    if (!product || product.ProductTranslation.length === 0) return null;
+
+    // Перетворюємо дані до правильного типу
+    const descriptionInfo = product.ProductTranslation[0]
+      .descriptionInfo as unknown as z.infer<typeof DescriptionInfoSchema>;
+
+    return {
+      ...product,
+      descriptionInfo,
+    };
+  } catch (error) {
+    console.error("Error fetching product by slug and locale:", error);
+    return null;
+  }
 }
 
 export async function getProductsByCategory({
