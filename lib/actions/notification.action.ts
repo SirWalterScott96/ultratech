@@ -106,7 +106,9 @@ async function createMainMessage(data: OrderData) {
   if (deliveryType === "courier") {
     deliveryInfo = `
   🚚 Кур'єрська доставка
-  📍 Адреса: ${deliveryAddress || "Не вказано"}`;
+  📍 Адреса: Місто ${city || "Не вказано"}, адреса: ${
+      deliveryAddress || "Не вказано"
+    }`;
   } else {
     deliveryInfo = `
   🏙️ Місто: ${city || "Не вказано"}

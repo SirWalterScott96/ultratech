@@ -68,6 +68,7 @@ const MainOrder = () => {
     if (isCourierDelivery) {
       return z.object({
         ...baseSchema,
+        city: z.string().min(1, parse(t("cityError")) as string),
         deliveryAddress: z
           .string()
           .min(
@@ -129,7 +130,7 @@ const MainOrder = () => {
   useEffect(() => {
     const cityValue = form.watch("city");
 
-    if (cityValue?.length < 3 || isCitySelected || isCourierDelivery) {
+    if (cityValue?.length < 3 || isCitySelected) {
       setCities([]);
       setShowCityDropdown(false);
       return;
@@ -164,7 +165,7 @@ const MainOrder = () => {
 
     const timeout = setTimeout(fetchCities, 500);
     return () => clearTimeout(timeout);
-  }, [form.watch("city"), isCitySelected, isCourierDelivery]);
+  }, [form.watch("city"), isCitySelected]);
 
   const fetchWarehouses = async (searchQuery = "") => {
     if (!cityRef) return;
@@ -237,7 +238,11 @@ const MainOrder = () => {
       phoneNumber: values.phoneNumber,
       products: productsInCart,
       ...(isCourierDelivery
-        ? { deliveryAddress: values.deliveryAddress, deliveryType: "courier" }
+        ? {
+            city: values.city,
+            deliveryAddress: values.deliveryAddress,
+            deliveryType: "courier",
+          }
         : {
             city: values.city,
             warehouse: values.warehouse,
@@ -321,8 +326,58 @@ const MainOrder = () => {
               )}
             />
 
-            {/* Для кур'єрської доставки показуємо поле адреси */}
+            {/* Поле вибору міста показуємо завжди */}
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem className="relative">
+                  <FormLabel>{parse(t("city"))}</FormLabel>
+                  <Input
+                    placeholder={parse(t("startTyping")) as string}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      setIsCitySelected(false);
+                      if (e.target.value.length >= 3) {
+                        setShowCityDropdown(true);
+                      }
+                    }}
+                  />
+                  {showCityDropdown && cities.length > 0 && (
+                    <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
+                      {cities.map(({ name, ref }, index) => (
+                        <li
+                          key={index}
+                          className="p-2 hover:bg-gray-200 cursor-pointer"
+                          onClick={() => {
+                            form.setValue("city", name);
+                            setCityRef(ref);
+                            setShowCityDropdown(false);
+                            setIsCitySelected(true);
+                            if (!isCourierDelivery) {
+                              form.setValue("warehouse", "");
+                            }
+                          }}
+                        >
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {loadingCities && (
+                    <div className="text-sm text-gray-500 mt-1">
+                      {parse(t("cityLoading"))}
+                    </div>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Додаткові поля в залежності від типу доставки */}
             {isCourierDelivery ? (
+              // Для кур'єрської доставки показуємо поле адреси
               <FormField
                 control={form.control}
                 name="deliveryAddress"
@@ -345,101 +400,54 @@ const MainOrder = () => {
                 )}
               />
             ) : (
-              // Інакше показуємо поля для вибору міста та відділення
-              <>
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem className="relative">
-                      <FormLabel>{parse(t("city"))}</FormLabel>
-                      <Input
-                        placeholder={parse(t("startTyping")) as string}
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e.target.value);
-                          setIsCitySelected(false);
-                          if (e.target.value.length >= 3) {
-                            setShowCityDropdown(true);
-                          }
-                        }}
-                      />
-                      {showCityDropdown && cities.length > 0 && (
-                        <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
-                          {cities.map(({ name, ref }, index) => (
-                            <li
-                              key={index}
-                              className="p-2 hover:bg-gray-200 cursor-pointer"
-                              onClick={() => {
-                                form.setValue("city", name);
-                                setCityRef(ref);
-                                setShowCityDropdown(false);
-                                setIsCitySelected(true);
-                                form.setValue("warehouse", "");
-                              }}
-                            >
-                              {name}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {loadingCities && (
-                        <div className="text-sm text-gray-500 mt-1">
-                          {parse(t("cityLoading"))}
-                        </div>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="warehouse"
-                  render={({ field }) => (
-                    <FormItem className="relative">
-                      <FormLabel>{parse(t("warehouse"))}</FormLabel>
-                      <Input
-                        placeholder={
-                          cityRef
-                            ? (parse(t("startTyping")) as string)
-                            : (parse(t("startSelectCity")) as string)
+              // Для доставки у відділення показуємо лише поле відділення
+              <FormField
+                control={form.control}
+                name="warehouse"
+                render={({ field }) => (
+                  <FormItem className="relative">
+                    <FormLabel>{parse(t("warehouse"))}</FormLabel>
+                    <Input
+                      placeholder={
+                        cityRef
+                          ? (parse(t("startTyping")) as string)
+                          : (parse(t("startSelectCity")) as string)
+                      }
+                      {...field}
+                      disabled={!cityRef}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        if (cityRef) {
+                          setShowWarehouseDropdown(true);
                         }
-                        {...field}
-                        disabled={!cityRef}
-                        onChange={(e) => {
-                          field.onChange(e.target.value);
-                          if (cityRef) {
-                            setShowWarehouseDropdown(true);
-                          }
-                        }}
-                      />
-                      {showWarehouseDropdown && warehouses.length > 0 && (
-                        <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
-                          {warehouses.map((wh, index) => (
-                            <li
-                              key={index}
-                              className="p-2 hover:bg-gray-200 cursor-pointer"
-                              onClick={() => {
-                                form.setValue("warehouse", wh);
-                                setIsWarehouseSelected(true);
-                                setShowWarehouseDropdown(false);
-                              }}
-                            >
-                              {wh}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {loadingWarehouses && (
-                        <div className="text-sm text-gray-500 mt-1">
-                          {parse(t("warehouseLoading"))}
-                        </div>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+                      }}
+                    />
+                    {showWarehouseDropdown && warehouses.length > 0 && (
+                      <ul className="absolute top-full left-0 w-full bg-white border mt-1 rounded-lg shadow-lg z-10 max-h-40 overflow-auto">
+                        {warehouses.map((wh, index) => (
+                          <li
+                            key={index}
+                            className="p-2 hover:bg-gray-200 cursor-pointer"
+                            onClick={() => {
+                              form.setValue("warehouse", wh);
+                              setIsWarehouseSelected(true);
+                              setShowWarehouseDropdown(false);
+                            }}
+                          >
+                            {wh}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {loadingWarehouses && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        {parse(t("warehouseLoading"))}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             {ShowDifferentPaymentDetails === parse(t("cashlessPayment")) && (

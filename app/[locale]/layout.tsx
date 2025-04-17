@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/assets/styles/globals.css";
-import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+import { APP_NAME } from "@/lib/constants";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { routing } from "@/i18n/routing";
@@ -12,7 +12,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: `${APP_NAME}`,
-  description: `${APP_DESCRIPTION}`,
+  description: "Browse the best and most affordable gadgets",
 };
 
 export default async function RootLayout({
